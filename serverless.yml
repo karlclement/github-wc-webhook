@@ -13,11 +13,17 @@ provider:
 
 functions:
   webhook:
-    handler: handler.handle
+    handler: handlers/webhook.handle
     events:
       - http:
           path: /webhook
           method: post
+  commits:
+    handler: handlers/commits.handle
+    events:
+      - http:
+          path: /commits
+          method: get
 
 resources:
   Resources:

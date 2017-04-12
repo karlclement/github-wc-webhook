@@ -2,5 +2,6 @@
   "REGION": "",
   "STAGE": "",
   "TABLE_NAME": "",
-  "GITHUB_OATH_TOKEN": ""
+  "GITHUB_OATH_TOKEN": "",
+  "GITHUB_WEBHOOK_SECRET": ""
 }

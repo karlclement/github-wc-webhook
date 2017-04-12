@@ -1,0 +1,10 @@
+{
+  "name": "github-wc-webhook",
+  "author": "Daniel Ireson",
+  "license": "MIT",
+  "dependencies": {
+    "aws-sdk": "^2.28.0",
+    "github-api": "^3.0.0"
+  },
+  "devDependencies": {}
+}

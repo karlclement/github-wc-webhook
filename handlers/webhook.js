@@ -1,7 +1,8 @@
 'use strict'
 
 const AWS = require('aws-sdk')
-const request = require('request-promise')
+const request = require('request')
+const requestPromise = require('request-promise')
 const moment = require('moment')
 
 const config = require('../config.json')
@@ -53,7 +54,7 @@ function buildApiPromisesFromCommits (commits, user, repo) {
         'User-Agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:15.0) Gecko/20100101 Firefox/15.0.1'
       }
     }
-    return request(options)
+    return requestPromise(options)
   })
 }
 

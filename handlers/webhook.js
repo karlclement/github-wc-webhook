@@ -1,26 +1,28 @@
 'use strict'
 
+const AWS = require('aws-sdk')
 const request = require('request-promise')
+const moment = require('moment')
+
+const config = require('../config.json')
 
 module.exports.handle = (event, context, callback) => {
   let commits = getCommitsFromEvent(event)
   let eventDetails = getEventDetails(event)
   let promises = buildApiPromisesFromCommits(commits, eventDetails.user, eventDetails.repo)
-  let totalChangeCount = {
-    deleted: 0,
-    added: 0
-  }
   Promise.all(promises).then(function (responses) {
+    let commitCount = {deleted: 0, added: 0}
     responses.forEach(function (response) {
-      JSON.parse(response).files.forEach(function (file) {
+      response.files.forEach(function (file) {
         if ('patch' in file) {
           let fileChangeCount = countWordChangesInFilePatch(file.patch)
-          totalChangeCount.deleted += fileChangeCount.deleted
-          totalChangeCount.added += fileChangeCount.added
+          commitCount.deleted += fileChangeCount.deleted
+          commitCount.added += fileChangeCount.added
         }
       })
+      let date = moment(response.commit.committer.date).format('YYYY-MM-DD')
+      saveCommitCountToDatabase(response.sha, date, commitCount)
     })
-    // todo: save to database
   }).catch(function (error) {
     callback(new Error(error))
   })
@@ -45,6 +47,7 @@ function buildApiPromisesFromCommits (commits, user, repo) {
   return commits.map(function (sha) {
     let url = `https://api.github.com/repos/${user}/${repo}/commits/${sha}`
     let options = {
+      json: true,
       uri: url,
       headers: {
         'User-Agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:15.0) Gecko/20100101 Firefox/15.0.1'
@@ -55,10 +58,7 @@ function buildApiPromisesFromCommits (commits, user, repo) {
 }
 
 function countWordChangesInFilePatch (patch) {
-  let results = {
-    deleted: 0,
-    added: 0
-  }
+  let results = {deleted: 0, added: 0}
   let lines = patch.split('\n')
   let deletedWords = []
   let addedWords = []
@@ -118,4 +118,14 @@ function countChange (wordCountObjOne, wordCountObjTwo) {
     }
   }
   return count
+}
+
+function saveCommitCountToDatabase (sha, date, commitCount) {
+  let docClient = new AWS.DynamoDB.DocumentClient()
+  let payload = {
+    sha: sha,
+    date: date,
+    counts: commitCount
+  }
+  return docClient.put({TableName: config.TABLE_NAME, Item: payload}).promise()
 }

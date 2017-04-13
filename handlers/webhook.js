@@ -1,10 +1,60 @@
 'use strict'
 
+const request = require('request-promise')
+
 module.exports.handle = (event, context, callback) => {
-  // let wordChangeResults = countWordChangesInPatch(patch)
+  let commits = getCommitsFromEvent(event)
+  let eventDetails = getEventDetails(event)
+  let promises = buildApiPromisesFromCommits(commits, eventDetails.user, eventDetails.repo)
+  let totalChangeCount = {
+    deleted: 0,
+    added: 0
+  }
+  Promise.all(promises).then(function (responses) {
+    responses.forEach(function (response) {
+      JSON.parse(response).files.forEach(function (file) {
+        if ('patch' in file) {
+          let fileChangeCount = countWordChangesInFilePatch(file.patch)
+          totalChangeCount.deleted += fileChangeCount.deleted
+          totalChangeCount.added += fileChangeCount.added
+        }
+      })
+    })
+    // todo: save to database
+  }).catch(function (error) {
+    callback(new Error(error))
+  })
 }
 
-function countWordChangesInPatch (patch) {
+function getCommitsFromEvent (event) {
+  return event.commits.reduce(function (list, commit) {
+    list.push(commit.id)
+    return list
+  }, [])
+}
+
+function getEventDetails (event) {
+  let fullName = event.repository.full_name.split('/')
+  return {
+    user: fullName[0],
+    repo: fullName[1]
+  }
+}
+
+function buildApiPromisesFromCommits (commits, user, repo) {
+  return commits.map(function (sha) {
+    let url = `https://api.github.com/repos/${user}/${repo}/commits/${sha}`
+    let options = {
+      uri: url,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:15.0) Gecko/20100101 Firefox/15.0.1'
+      }
+    }
+    return request(options)
+  })
+}
+
+function countWordChangesInFilePatch (patch) {
   let results = {
     deleted: 0,
     added: 0

@@ -32,8 +32,15 @@ resources:
       Properties:
         TableName: ${file(config.json):TABLE_NAME}
         AttributeDefinitions:
-          - AttributeName: id
+          - AttributeName: sha
+            AttributeType: S
+          - AttributeName: date
             AttributeType: S
         KeySchema:
-          - AttributeName: id
+          - AttributeName: sha
             KeyType: HASH
+          - AttributeName: date
+            KeyType: RANGE
+        ProvisionedThroughput:
+          ReadCapacityUnits: 5
+          WriteCapacityUnits: 5

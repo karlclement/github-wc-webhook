@@ -3,7 +3,9 @@
   "author": "Daniel Ireson",
   "license": "MIT",
   "dependencies": {
-    "aws-sdk": "^2.28.0"
+    "aws-sdk": "^2.28.0",
+    "request": "^2.81.0",
+    "request-promise": "^4.2.0"
   },
   "devDependencies": {
     "eslint": "^3.17.1",

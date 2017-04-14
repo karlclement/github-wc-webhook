@@ -30,8 +30,7 @@ functions:
           request:
             parameters:
               querystrings:
-                from: true
-                to: true
+                limit: true
 
 resources:
   Resources:

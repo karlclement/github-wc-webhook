@@ -34,9 +34,9 @@ function hasValidLimitParameter (params) {
   )
 }
 
-function buildResponse (statusCode, message, data) {
+function buildResponse (statusCode, message, commits) {
   let responseBody = {message}
-  if (data) responseBody.data = data
+  if (commits) responseBody.commits = commits
   return {
     statusCode: statusCode,
     body: JSON.stringify(responseBody)

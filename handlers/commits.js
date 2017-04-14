@@ -5,27 +5,25 @@ const dynamodb = require('../lib/dynamodb')
 const response = require('../lib/response')
 
 module.exports.handle = (event, context, callback) => {
-  if (isAuthenticated(event, callback)) {
-    let params = Object.assign({}, event.queryStringParameters)
-    dynamodb.search(params)
-      .then(function (response) {
-        response.build(callback, 200, response.Count + ' commits returned', response.Items)
-      })
-      .catch(function (error) {
-        response.build(callback, 500, 'An error occured, check CloudWatch logs for more information')
-        console.error(error)
-      })
-  }
+  authenticate(event)
+    .then(function () {
+      let params = Object.assign({}, event.queryStringParameters)
+      return dynamodb.search(params)
+    })
+    .then(function (response) {
+      response.build(callback, 200, response.Count + ' commits returned', response.Items)
+    })
+    .catch(function (error) {
+      response.build(callback, error.statusCode || 500, error.message)
+    })
 }
 
-function isAuthenticated (event, callback) {
+function authenticate (event) {
   if (!('X-Authorization' in event.headers)) {
-    response.build(callback, 401, 'Please pass a valid API Key as a X-Authorization header')
-    return false
+    return Promise.reject(response.error(401, 'Please pass a valid API Key as a X-Authorization header'))
   }
   if (event.headers['X-Authorization'] !== config.API_KEY) {
-    response.build(callback, 401, 'API Key not valid')
-    return false
+    return Promise.reject(response.error(401, 'API Key not valid'))
   }
-  return true
+  return Promise.resolve()
 }

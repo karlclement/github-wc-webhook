@@ -10,33 +10,33 @@ const github = require('../lib/github')
 const response = require('../lib/response')
 
 module.exports.handle = (event, context, callback) => {
-  if (isAuthenticated(event, callback)) {
-    let githubPayload = JSON.parse(event.body)
-    let commits = getCommitsFromEvent(githubPayload)
-    let repo = githubPayload.repository.full_name
-    github.get(commits, repo)
-      .then(function (responses) {
-        return createSavePayloads(responses)
-      })
-      .then(function (payloads) {
-        return dynamodb.save(payloads)
-      })
-      .then(function () {
-        response.build(callback, 200, 'Word count webhook completed successfully')
-      })
-      .catch(function (error) {
-        response.build(callback, 500, error.message)
-      })
-  }
+  authenticate(event)
+    .then(function () {
+      let githubPayload = JSON.parse(event.body)
+      let commits = getCommitsFromEvent(githubPayload)
+      let repo = githubPayload.repository.full_name
+      return github.get(commits, repo)
+    })
+    .then(function (responses) {
+      return createSavePayloads(responses)
+    })
+    .then(function (payloads) {
+      return dynamodb.save(payloads)
+    })
+    .then(function () {
+      response.build(callback, 200, 'Word count webhook completed successfully')
+    })
+    .catch(function (error) {
+      response.build(callback, error.statusCode || 500, error.message)
+    })
 }
 
-function isAuthenticated (event, callback) {
+function authenticate (event) {
   let hmac = crypto.createHmac('sha1', config.GITHUB_WEBHOOK_SECRET).update(event.body).digest('hex')
   if (`sha1=${hmac}` !== event.headers['X-Hub-Signature']) {
-    response.build(callback, 401, 'Generated HMAC and X-Hub-Signature do not match')
-    return false
+    return Promise.reject(response.error(401, 'Generated HMAC and X-Hub-Signature do not match'))
   }
-  return true
+  return Promise.resolve()
 }
 
 function getCommitsFromEvent (event) {

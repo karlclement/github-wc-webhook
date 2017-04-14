@@ -8,8 +8,9 @@ const moment = require('moment')
 const config = require('../config.json')
 
 module.exports.handle = (event, context, callback) => {
-  let commits = getCommitsFromEvent(event)
-  let repoFullPath = event.repository.full_name
+  let githubPushEvent = JSON.parse(event.body)
+  let commits = getCommitsFromEvent(githubPushEvent)
+  let repoFullPath = githubPushEvent.repository.full_name
   let promises = buildApiPromisesFromCommits(commits, repoFullPath)
   Promise.all(promises).then(function (responses) {
     let commitCount = {deleted: 0, added: 0}

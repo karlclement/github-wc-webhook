@@ -2,43 +2,31 @@
 
 const crypto = require('crypto')
 
-const aws = require('aws-sdk')
-const request = require('request')
-const requestPromise = require('request-promise')
 const moment = require('moment')
 
 const config = require('../config.json')
+const dynamodb = require('../lib/dynamodb')
+const github = require('../lib/github')
+const response = require('../lib/response')
 
 module.exports.handle = (event, context, callback) => {
   if (isAuthenticated(event, callback)) {
-    let githubPushEvent = JSON.parse(event.body)
-    let commits = getCommitsFromEvent(githubPushEvent)
-    let apiPromises = buildApiPromises(commits, githubPushEvent.repository.full_name)
-    let savePayloads = []
-    Promise.all(apiPromises).then(function (responses) {
-      let commitWordCount = {deleted: 0, added: 0}
-      for (let response of responses) {
-        for (let file of response.files) {
-          if ('patch' in file) {
-            let fileChangeCount = countWordChangesInFilePatch(file.patch)
-            commitWordCount.deleted += fileChangeCount.deleted
-            commitWordCount.added += fileChangeCount.added
-          }
-        }
-        savePayloads.push({
-          timestamp: moment(response.commit.committer.date).format('x'),
-          sha: response.sha,
-          wordCount: commitWordCount
-        })
-      }
-    }).then(function () {
-      let savePromises = buildSavePromises(savePayloads)
-      return Promise.all(savePromises)
-    }).then(function () {
-      callback(null, 'Successfully saved promises')
-    }).catch(function (error) {
-      callback(new Error(error))
-    })
+    let githubPayload = JSON.parse(event.body)
+    let commits = getCommitsFromEvent(githubPayload)
+    let repo = githubPayload.repository.full_name
+    github.get(commits, repo)
+      .then(function (responses) {
+        return createSavePayloads(responses)
+      })
+      .then(function (payloads) {
+        return dynamodb.save(payloads)
+      })
+      .then(function () {
+        response.build(callback, 200, 'Word count webhook completed successfully')
+      })
+      .catch(function (error) {
+        response.build(callback, 500, error.message)
+      })
   }
 }
 
@@ -58,44 +46,48 @@ function getCommitsFromEvent (event) {
   }, [])
 }
 
-function buildApiPromises (commits, path) {
-  return commits.map(function (sha) {
-    let url = `https://api.github.com/repos/${path}/commits/${sha}`
-    let options = {
-      json: true,
-      uri: url,
-      headers: {
-        'Authorization': 'token ' + config.GITHUB_OATH_TOKEN,
-        'User-Agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:15.0) Gecko/20100101 Firefox/15.0.1'
-      }
+function createSavePayloads (responses) {
+  return Promise.resolve(responses.map(function (res) {
+    return {
+      timestamp: moment(res.commit.committer.date).format('x'),
+      sha: res.sha,
+      wordCount: countWordChangesInCommit(res.files)
     }
-    return requestPromise(options)
-  })
+  }))
+}
+
+function countWordChangesInCommit (files) {
+  return files.reduce(function (wordCount, file) {
+    if ('patch' in file) {
+      let fileChangeCount = countWordChangesInFilePatch(file.patch)
+      wordCount.deleted += fileChangeCount.deleted
+      wordCount.added += fileChangeCount.added
+    }
+    return wordCount
+  }, {deleted: 0, added: 0})
 }
 
 function countWordChangesInFilePatch (patch) {
-  let results = {deleted: 0, added: 0}
-  let lines = patch.split('\n')
   let deletedWords = []
   let addedWords = []
-  for (let line of lines) {
+  return patch.split('\n').reduce(function (wordCount, line) {
     switch (line.charAt(0)) {
       case '-':
         deletedWords = deletedWords.concat(getWordsInString(line))
         break
       case '+':
         addedWords = addedWords.concat(getWordsInString(line))
-        let countResult = getMultiLineCountResult(deletedWords, addedWords)
-        results.deleted += countResult.deleted
-        results.added += countResult.added
+        let countResult = getWordChanges(deletedWords, addedWords)
+        wordCount.deleted += countResult.deleted
+        wordCount.added += countResult.added
         break
     }
     if (line.charAt(0) !== '-') {
       deletedWords = []
       addedWords = []
     }
-  }
-  return results
+    return wordCount
+  }, {deleted: 0, added: 0})
 }
 
 function getWordsInString (str) {
@@ -103,16 +95,16 @@ function getWordsInString (str) {
   return str.match(regex) || []
 }
 
-function getMultiLineCountResult (deletedWords, addedWords) {
-  let deletedWordCount = getWordCountFromList(deletedWords)
-  let addedWordCount = getWordCountFromList(addedWords)
+function getWordChanges (deletedWords, addedWords) {
+  let deletedWordCount = getWordCount(deletedWords)
+  let addedWordCount = getWordCount(addedWords)
   return {
     deleted: countChange(addedWordCount, deletedWordCount),
     added: countChange(deletedWordCount, addedWordCount)
   }
 }
 
-function getWordCountFromList (arr) {
+function getWordCount (arr) {
   return arr.reduce(function (obj, word) {
     if (word in obj) {
       obj[word]++
@@ -134,11 +126,4 @@ function countChange (wordCountObjOne, wordCountObjTwo) {
     }
   }
   return count
-}
-
-function buildSavePromises (payloads) {
-  let docClient = new aws.DynamoDB.DocumentClient()
-  return payloads.map(function (payload) {
-    return docClient.put({TableName: config.TABLE_NAME, Item: payload}).promise()
-  })
 }

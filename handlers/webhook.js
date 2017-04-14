@@ -44,6 +44,7 @@ function buildApiPromisesFromCommits (commits, repoFullPath) {
       json: true,
       uri: url,
       headers: {
+        'Authorization': 'token ' + config.GITHUB_OATH_TOKEN,
         'User-Agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:15.0) Gecko/20100101 Firefox/15.0.1'
       }
     }

@@ -23,7 +23,7 @@ module.exports.handle = (event, context, callback) => {
         }
       }
       let date = moment(response.commit.committer.date).format('YYYY-MM-DD')
-      saveCommitCountToDatabase(response.sha, date, commitCount)
+      return saveCommitCountToDatabase(response.sha, date, commitCount)
     }
   }).catch(function (error) {
     callback(new Error(error))

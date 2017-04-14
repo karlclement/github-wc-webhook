@@ -33,7 +33,7 @@ module.exports.handle = (event, context, callback) => {
 function isAuthenticated (event, callback) {
   let hmac = crypto.createHmac('sha1', config.GITHUB_WEBHOOK_SECRET).update(event.body).digest('hex')
   if (`sha1=${hmac}` !== event.headers['X-Hub-Signature']) {
-    callback(new Error('Generated HMAC and X-Hub-Signature do not match'))
+    response.build(callback, 401, 'Generated HMAC and X-Hub-Signature do not match')
     return false
   }
   return true

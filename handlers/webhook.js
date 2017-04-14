@@ -1,6 +1,6 @@
 'use strict'
 
-const AWS = require('aws-sdk')
+const aws = require('aws-sdk')
 const request = require('request')
 const requestPromise = require('request-promise')
 const moment = require('moment')
@@ -115,7 +115,7 @@ function countChange (wordCountObjOne, wordCountObjTwo) {
 }
 
 function saveCommitCountToDatabase (sha, date, commitCount) {
-  let docClient = new AWS.DynamoDB.DocumentClient()
+  let docClient = new aws.DynamoDB.DocumentClient()
   let payload = {
     sha: sha,
     date: date,

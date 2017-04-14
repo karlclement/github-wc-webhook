@@ -14,17 +14,17 @@ module.exports.handle = (event, context, callback) => {
   let promises = buildApiPromisesFromCommits(commits, repoFullPath)
   Promise.all(promises).then(function (responses) {
     let commitCount = {deleted: 0, added: 0}
-    responses.forEach(function (response) {
-      response.files.forEach(function (file) {
+    for (let response of responses) {
+      for (let file of response.files) {
         if ('patch' in file) {
           let fileChangeCount = countWordChangesInFilePatch(file.patch)
           commitCount.deleted += fileChangeCount.deleted
           commitCount.added += fileChangeCount.added
         }
-      })
+      }
       let date = moment(response.commit.committer.date).format('YYYY-MM-DD')
       saveCommitCountToDatabase(response.sha, date, commitCount)
-    })
+    }
   }).catch(function (error) {
     callback(new Error(error))
   })
@@ -57,7 +57,7 @@ function countWordChangesInFilePatch (patch) {
   let lines = patch.split('\n')
   let deletedWords = []
   let addedWords = []
-  lines.forEach(function (line, i) {
+  for (let line of lines) {
     switch (line.charAt(0)) {
       case '-':
         deletedWords = deletedWords.concat(getWordsInString(line))
@@ -73,7 +73,7 @@ function countWordChangesInFilePatch (patch) {
       deletedWords = []
       addedWords = []
     }
-  })
+  }
   return results
 }
 

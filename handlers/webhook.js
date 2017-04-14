@@ -12,17 +12,17 @@ module.exports.handle = (event, context, callback) => {
   let commits = getCommitsFromEvent(githubPushEvent)
   let promises = buildApiPromisesFromCommits(commits, githubPushEvent.repository.full_name)
   Promise.all(promises).then(function (responses) {
-    let commitCount = {deleted: 0, added: 0}
+    let commitWordCount = {deleted: 0, added: 0}
     for (let response of responses) {
       for (let file of response.files) {
         if ('patch' in file) {
           let fileChangeCount = countWordChangesInFilePatch(file.patch)
-          commitCount.deleted += fileChangeCount.deleted
-          commitCount.added += fileChangeCount.added
+          commitWordCount.deleted += fileChangeCount.deleted
+          commitWordCount.added += fileChangeCount.added
         }
       }
       let timestamp = moment(response.commit.committer.date).format('x')
-      return saveCommitCountToDatabase(timestamp, response.sha, commitCount)
+      return saveCommitCountToDatabase(timestamp, response.sha, commitWordCount)
     }
   }).catch(function (error) {
     callback(new Error(error))
@@ -114,8 +114,8 @@ function countChange (wordCountObjOne, wordCountObjTwo) {
   return count
 }
 
-function saveCommitCountToDatabase (timestamp, sha, count) {
+function saveCommitCountToDatabase (timestamp, sha, wordCount) {
   let docClient = new aws.DynamoDB.DocumentClient()
-  let payload = {timestamp, sha, count}
+  let payload = {timestamp, sha, wordCount}
   return docClient.put({TableName: config.TABLE_NAME, Item: payload}).promise()
 }

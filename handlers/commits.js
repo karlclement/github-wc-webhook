@@ -5,7 +5,8 @@ const aws = require('aws-sdk')
 const config = require('../config.json')
 
 module.exports.handle = (event, context, callback) => {
-  queryDatabase(event).then(function (response) {
+  let params = Object.assign({}, event.queryStringParameters)
+  queryDatabase(params).then(function (response) {
     let message = response.Count + ' commits returned'
     callback(null, buildResponse(200, message, response.Items))
   }).catch(function (error) {
@@ -14,24 +15,22 @@ module.exports.handle = (event, context, callback) => {
   })
 }
 
-function queryDatabase (event) {
+function queryDatabase (params) {
   let docClient = new aws.DynamoDB.DocumentClient()
-  return docClient.scan(buildQuery(event)).promise()
+  return docClient.scan(buildQuery(params)).promise()
 }
 
-function buildQuery (event) {
+function buildQuery (params) {
   let query = {TableName: config.TABLE_NAME}
-  if (hasValidLimitParameter(event)) {
-    query.limit = event.queryStringParameters.limit
-  }
+  if (hasValidLimitParameter(params)) query.limit = params.limit
   return query
 }
 
-function hasValidLimitParameter (event) {
+function hasValidLimitParameter (params) {
   return (
-    'limit' in event.queryStringParameters &&
-    event.queryStringParameters.limit % 1 === 0 &&
-    event.queryStringParameters.limit > 0
+    'limit' in params &&
+    params.limit % 1 === 0 &&
+    params.limit > 0
   )
 }
 

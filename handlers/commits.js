@@ -2,7 +2,7 @@
 
 const aws = require('aws-sdk')
 
-module.exports.hello = (event, context, callback) => {
+module.exports.handle = (event, context, callback) => {
   
 }
 

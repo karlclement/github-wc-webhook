@@ -13,8 +13,9 @@ module.exports.handle = (event, context, callback) => {
   if (isAuthenticated(event, callback)) {
     let githubPushEvent = JSON.parse(event.body)
     let commits = getCommitsFromEvent(githubPushEvent)
-    let promises = buildApiPromisesFromCommits(commits, githubPushEvent.repository.full_name)
-    Promise.all(promises).then(function (responses) {
+    let apiPromises = buildApiPromises(commits, githubPushEvent.repository.full_name)
+    let savePayloads = []
+    Promise.all(apiPromises).then(function (responses) {
       let commitWordCount = {deleted: 0, added: 0}
       for (let response of responses) {
         for (let file of response.files) {
@@ -24,9 +25,17 @@ module.exports.handle = (event, context, callback) => {
             commitWordCount.added += fileChangeCount.added
           }
         }
-        let timestamp = moment(response.commit.committer.date).format('x')
-        return saveCommitCountToDatabase(timestamp, response.sha, commitWordCount)
+        savePayloads.push({
+          timestamp: moment(response.commit.committer.date).format('x'),
+          sha: response.sha,
+          wordCount: commitWordCount
+        })
       }
+    }).then(function () {
+      let savePromises = buildSavePromises(savePayloads)
+      return Promise.all(savePromises)
+    }).then(function () {
+      callback(null, 'Successfully saved promises')
     }).catch(function (error) {
       callback(new Error(error))
     })
@@ -49,7 +58,7 @@ function getCommitsFromEvent (event) {
   }, [])
 }
 
-function buildApiPromisesFromCommits (commits, path) {
+function buildApiPromises (commits, path) {
   return commits.map(function (sha) {
     let url = `https://api.github.com/repos/${path}/commits/${sha}`
     let options = {
@@ -127,8 +136,9 @@ function countChange (wordCountObjOne, wordCountObjTwo) {
   return count
 }
 
-function saveCommitCountToDatabase (timestamp, sha, wordCount) {
+function buildSavePromises (payloads) {
   let docClient = new aws.DynamoDB.DocumentClient()
-  let payload = {timestamp, sha, wordCount}
-  return docClient.put({TableName: config.TABLE_NAME, Item: payload}).promise()
+  return payloads.map(function (payload) {
+    return docClient.put({TableName: config.TABLE_NAME, Item: payload}).promise()
+  })
 }

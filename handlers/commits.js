@@ -22,7 +22,7 @@ function queryDatabase (params) {
 
 function buildQuery (params) {
   let query = {TableName: config.TABLE_NAME}
-  if (hasValidLimitParameter(params)) query.limit = params.limit
+  if (hasValidLimitParameter(params)) query.Limit = params.limit
   return query
 }
 

@@ -9,8 +9,8 @@ const config = require('../config.json')
 
 module.exports.handle = (event, context, callback) => {
   let commits = getCommitsFromEvent(event)
-  let eventDetails = getEventDetails(event)
-  let promises = buildApiPromisesFromCommits(commits, eventDetails.user, eventDetails.repo)
+  let repoFullPath = event.repository.full_name
+  let promises = buildApiPromisesFromCommits(commits, repoFullPath)
   Promise.all(promises).then(function (responses) {
     let commitCount = {deleted: 0, added: 0}
     responses.forEach(function (response) {
@@ -36,17 +36,9 @@ function getCommitsFromEvent (event) {
   }, [])
 }
 
-function getEventDetails (event) {
-  let fullName = event.repository.full_name.split('/')
-  return {
-    user: fullName[0],
-    repo: fullName[1]
-  }
-}
-
-function buildApiPromisesFromCommits (commits, user, repo) {
+function buildApiPromisesFromCommits (commits, repoFullPath) {
   return commits.map(function (sha) {
-    let url = `https://api.github.com/repos/${user}/${repo}/commits/${sha}`
+    let url = `https://api.github.com/repos/${repoFullPath}/commits/${sha}`
     let options = {
       json: true,
       uri: url,

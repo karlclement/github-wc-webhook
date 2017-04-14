@@ -1,5 +1,7 @@
 'use strict'
 
+const crypto = require('crypto')
+
 const aws = require('aws-sdk')
 const request = require('request')
 const requestPromise = require('request-promise')
@@ -8,25 +10,36 @@ const moment = require('moment')
 const config = require('../config.json')
 
 module.exports.handle = (event, context, callback) => {
-  let githubPushEvent = JSON.parse(event.body)
-  let commits = getCommitsFromEvent(githubPushEvent)
-  let promises = buildApiPromisesFromCommits(commits, githubPushEvent.repository.full_name)
-  Promise.all(promises).then(function (responses) {
-    let commitWordCount = {deleted: 0, added: 0}
-    for (let response of responses) {
-      for (let file of response.files) {
-        if ('patch' in file) {
-          let fileChangeCount = countWordChangesInFilePatch(file.patch)
-          commitWordCount.deleted += fileChangeCount.deleted
-          commitWordCount.added += fileChangeCount.added
+  if (isAuthenticated(event, callback)) {
+    let githubPushEvent = JSON.parse(event.body)
+    let commits = getCommitsFromEvent(githubPushEvent)
+    let promises = buildApiPromisesFromCommits(commits, githubPushEvent.repository.full_name)
+    Promise.all(promises).then(function (responses) {
+      let commitWordCount = {deleted: 0, added: 0}
+      for (let response of responses) {
+        for (let file of response.files) {
+          if ('patch' in file) {
+            let fileChangeCount = countWordChangesInFilePatch(file.patch)
+            commitWordCount.deleted += fileChangeCount.deleted
+            commitWordCount.added += fileChangeCount.added
+          }
         }
+        let timestamp = moment(response.commit.committer.date).format('x')
+        return saveCommitCountToDatabase(timestamp, response.sha, commitWordCount)
       }
-      let timestamp = moment(response.commit.committer.date).format('x')
-      return saveCommitCountToDatabase(timestamp, response.sha, commitWordCount)
-    }
-  }).catch(function (error) {
-    callback(new Error(error))
-  })
+    }).catch(function (error) {
+      callback(new Error(error))
+    })
+  }
+}
+
+function isAuthenticated (event, callback) {
+  let hmac = crypto.createHmac('sha1', config.GITHUB_WEBHOOK_SECRET).update(event.body).digest('hex')
+  if (`sha1=${hmac}` !== event.headers['X-Hub-Signature']) {
+    callback(new Error('Generated HMAC and X-Hub-Signature do not match'))
+    return false
+  }
+  return true
 }
 
 function getCommitsFromEvent (event) {

@@ -27,6 +27,11 @@ functions:
       - http:
           path: /commits
           method: get
+          request:
+            parameters:
+              querystrings:
+                from: true
+                to: true
 
 resources:
   Resources:

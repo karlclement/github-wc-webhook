@@ -21,8 +21,8 @@ module.exports.handle = (event, context, callback) => {
           commitCount.added += fileChangeCount.added
         }
       }
-      let date = moment(response.commit.committer.date).format('YYYY-MM-DD')
-      return saveCommitCountToDatabase(response.sha, date, commitCount)
+      let timestamp = moment(response.commit.committer.date).format('x')
+      return saveCommitCountToDatabase(timestamp, response.sha, commitCount)
     }
   }).catch(function (error) {
     callback(new Error(error))
@@ -114,12 +114,8 @@ function countChange (wordCountObjOne, wordCountObjTwo) {
   return count
 }
 
-function saveCommitCountToDatabase (sha, date, commitCount) {
+function saveCommitCountToDatabase (timestamp, sha, count) {
   let docClient = new aws.DynamoDB.DocumentClient()
-  let payload = {
-    sha: sha,
-    date: date,
-    counts: commitCount
-  }
+  let payload = {timestamp, sha, count}
   return docClient.put({TableName: config.TABLE_NAME, Item: payload}).promise()
 }

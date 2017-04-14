@@ -41,12 +41,12 @@ resources:
         AttributeDefinitions:
           - AttributeName: sha
             AttributeType: S
-          - AttributeName: date
+          - AttributeName: timestamp
             AttributeType: S
         KeySchema:
           - AttributeName: sha
             KeyType: HASH
-          - AttributeName: date
+          - AttributeName: timestamp
             KeyType: RANGE
         ProvisionedThroughput:
           ReadCapacityUnits: 5

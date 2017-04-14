@@ -10,8 +10,8 @@ module.exports.handle = (event, context, callback) => {
       let params = Object.assign({}, event.queryStringParameters)
       return dynamodb.search(params)
     })
-    .then(function (response) {
-      response.build(callback, 200, response.Count + ' commits returned', response.Items)
+    .then(function (res) {
+      response.build(callback, 200, res.Count + ' commits returned', res.Items)
     })
     .catch(function (error) {
       response.build(callback, error.statusCode || 500, error.message)

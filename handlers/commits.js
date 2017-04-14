@@ -5,14 +5,28 @@ const aws = require('aws-sdk')
 const config = require('../config.json')
 
 module.exports.handle = (event, context, callback) => {
-  let params = Object.assign({}, event.queryStringParameters)
-  queryDatabase(params).then(function (response) {
-    let message = response.Count + ' commits returned'
-    callback(null, buildResponse(200, message, response.Items))
-  }).catch(function (error) {
-    console.error(error)
-    callback(null, buildResponse(500, 'An error occured, check CloudWatch logs for more information'))
-  })
+  if (isAuthenticated(event, callback)) {
+    let params = Object.assign({}, event.queryStringParameters)
+    queryDatabase(params).then(function (response) {
+      let message = response.Count + ' commits returned'
+      callback(null, buildResponse(200, message, response.Items))
+    }).catch(function (error) {
+      console.error(error)
+      callback(null, buildResponse(500, 'An error occured, check CloudWatch logs for more information'))
+    })
+  }
+}
+
+function isAuthenticated (event, callback) {
+  if (!('X-Authorization' in event.headers)) {
+    callback(null, buildResponse(401, 'Please pass a valid API Key as a X-Authorization header'))
+    return false
+  }
+  if (event.headers['X-Authorization'] !== config.API_KEY) {
+    callback(null, buildResponse(401, 'API Key not valid'))
+    return false
+  }
+  return true
 }
 
 function queryDatabase (params) {

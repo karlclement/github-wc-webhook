@@ -1,5 +1,5 @@
 # Word count webhook
-This is a simple Github webhook that counts the word additions and deletions on each git commit. It's built using the Serverless Framework and runs on AWS Lambda.
+This is a simple Github webhook that counts the word additions and deletions on each git commit. It's built using the Serverless Framework and runs on AWS Lambda. I'm using it to track the number of words written each day for a [Gitbook](https://www.gitbook.com) repository.
 
 ## How it works
 ### Usage

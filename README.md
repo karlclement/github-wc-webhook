@@ -43,7 +43,7 @@ The webhook works by looking at the git patches for each changed file of a git c
 
 # before: brown dog fox jumps lazy over quick (1), the (2)
 # after: cat fox jumps over (1), the (2)
-# result: brown dog lazy quick (-1), cat (+1) => added 1, deleted 3 
+# result: brown dog lazy quick (-1), cat (+1) => added 1, deleted 4 
 ```
 
 ## Getting started

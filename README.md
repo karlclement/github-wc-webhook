@@ -61,7 +61,7 @@ Make a copy of *config.sample.json* from the root of the project and save it as 
 ```
 
 ### Deploying to AWS
-Follow the instructions on the [Serverless](https://serverless.com/framework/docs/providers/aws/guide/installation) website to install Node.js, Serverless and setup your AWS credentials. Afterwards you can run *serverless deploy* from the project folder in the terminal to deploy the application. Make a note of the URLs that are created on API Gateway.
+Follow the instructions on the [Serverless](https://serverless.com/framework/docs/providers/aws/guide/installation) website to install Node.js, Serverless and setup your AWS credentials. Afterwards in the terminal from the project folder run *npm install* to get the dependencies and *serverless deploy* to deploy to AWS. Make a note of the URLs that are created on API Gateway.
 
 ### Setting up the webhook
 Go to the repository *settings* tab on Github, select *webhooks* from the left hand panel and then click the *add webhook* button. *Payload URL* should be the */webhook* API Gateway endpoint created in the previous section. Copy and paste the follow URL here. *Content type* should be set to *application/json* and secret should be set to the same value as *GITHUB_WEBHOOK_SECRET* in *config.json*. We want *just the push event* to trigger the webhook and the *active* checkbox to be ticked. The webhook should be now be configured and new pushes to the repository will trigger commit counts.

@@ -62,9 +62,10 @@ function countWordChangesInCommit (files) {
       let fileChangeCount = countWordChangesInFilePatch(file.patch)
       wordCount.deleted += fileChangeCount.deleted
       wordCount.added += fileChangeCount.added
+      wordCount.net += fileChangeCount.added - fileChangeCount.deleted
     }
     return wordCount
-  }, {deleted: 0, added: 0})
+  }, {deleted: 0, added: 0, net: 0})
 }
 
 function countWordChangesInFilePatch (patch) {
@@ -80,6 +81,7 @@ function countWordChangesInFilePatch (patch) {
         let countResult = getWordChanges(deletedWords, addedWords)
         wordCount.deleted += countResult.deleted
         wordCount.added += countResult.added
+        wordCount.net += countResult.added - countResult.deleted
         break
     }
     if (line.charAt(0) !== '-') {
@@ -87,7 +89,7 @@ function countWordChangesInFilePatch (patch) {
       addedWords = []
     }
     return wordCount
-  }, {deleted: 0, added: 0})
+  }, {deleted: 0, added: 0, net: 0})
 }
 
 function getWordsInString (str) {

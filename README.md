@@ -14,7 +14,8 @@ The */commits* route is used to access the commit count results. You should make
       "sha": "eda0113e75372bed13acc2267749e2dd68cd0b3e",
       "wordCount": {
         "deleted": 15,
-        "added": 89
+        "added": 89,
+        "net": 74
       },
       "timestamp": "1492436314000"
     },
@@ -22,7 +23,8 @@ The */commits* route is used to access the commit count results. You should make
       "sha": "79e2dd3e8c7475372be0b3ed13acc226da0116ed",
       "wordCount": {
         "deleted": 0,
-        "added": 77
+        "added": 77,
+        "net": 77
       },
       "timestamp": "1492235102000"
     }

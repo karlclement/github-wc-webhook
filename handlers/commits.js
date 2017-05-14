@@ -19,10 +19,10 @@ module.exports.handle = (event, context, callback) => {
 }
 
 function authenticate (event) {
-  if (!('X-Authorization' in event.headers)) {
-    return Promise.reject(response.error(401, 'Please pass a valid API Key as a X-Authorization header'))
+  if (!('Authorization' in event.headers)) {
+    return Promise.reject(response.error(401, 'Please pass a valid API Key as a Authorization header'))
   }
-  if (event.headers['X-Authorization'] !== config.API_KEY) {
+  if (event.headers['Authorization'] !== config.API_KEY) {
     return Promise.reject(response.error(401, 'API Key not valid'))
   }
   return Promise.resolve()

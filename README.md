@@ -5,7 +5,7 @@ This is a simple Github webhook that counts the word additions and deletions on 
 ### Usage
 Two API Gateway routes are be created. The */webhook* route receives a notification from Github on each repository push with a list of updated commits and then counts the word changes for each commit. Results are saved to a DynamoDB table with the commit *sha* as the partition key and *timestamp* as a sort key. 
 
-The */commits* route is used to access the commit count results. You should make GET requests to the */commits* URL with an *X-Authorization* header that is set to the same value as *API_KEY* in *config.json*. You can append a *limit* key to the query string to limit the number of commit counts to receive. For example to get the 100 most recent commit counts your URL would look like the following - https://apigatewayurl/dev/commits?limit=100. Responses to */commits* are returned in JSON in the below format.
+The */commits* route is used to access the commit count results. You should make GET requests to the */commits* URL with an *Authorization* header that is set to the same value as *API_KEY* in *config.json*. You can append a *limit* key to the query string to limit the number of commit counts to receive. For example to get the 100 most recent commit counts your URL would look like the following - https://apigatewayurl/dev/commits?limit=100. Responses to */commits* are returned in JSON in the below format.
 ``` json
 {
   "message": "2 commits returned",
